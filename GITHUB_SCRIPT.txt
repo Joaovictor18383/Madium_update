@@ -1,0 +1,176 @@
+@echo off
+title Madium Manager [discord.gg/olemad]
+setlocal enabledelayedexpansion
+
+:: Check for admin privileges and elevate if needed
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ==================================================
+    echo    SOLICITANDO PRIVILEGIOS DE ADMINISTRADOR...
+    echo ==================================================
+    powershell -NoProfile -Command "Start-Process '%~f0' -Verb RunAs"
+    exit /b
+)
+
+:menu
+cls
+echo ==================================================
+echo              MADIUM MANAGER - MENU
+echo ==================================================
+echo [1] Baixar e Extrair Madium
+echo [2] Deletar arquivos do Madium (Limpeza)
+echo [3] Baixar e Instalar Dependencias (Auto)
+echo [4] Baixar e Instalar Fishstrap (+ .NET 6.0)
+echo [5] Sair
+echo ==================================================
+set /p opt="Escolha uma opcao: "
+
+if "%opt%"=="1" goto baixar_madium
+if "%opt%"=="2" goto deletar_madium
+if "%opt%"=="3" goto dependencias
+if "%opt%"=="4" goto baixar_fishstrap
+if "%opt%"=="5" exit
+goto menu
+
+:baixar_madium
+cls
+echo ==================================================
+echo           BAIXANDO E EXTRAINDO MADIUM
+echo ==================================================
+
+set "zip_url=https://files.manuscdn.com/user_upload_by_module/session_file/310519663151269258/hEjTkYUgSVPmZlTE.zip"
+set "zip_path=%temp%\Madium.zip"
+set "extract_path=%USERPROFILE%\Downloads\Madium"
+
+echo Baixando Madium...
+curl -L -o "%zip_path%" "%zip_url%"
+if %errorlevel% neq 0 (
+    powershell -Command "Invoke-WebRequest -Uri '%zip_url%' -OutFile '%zip_path%'"
+)
+
+if not exist "%zip_path%" (
+    echo Falha ao baixar o arquivo. Verifique sua internet.
+    pause
+    goto menu
+)
+
+echo Extraindo arquivos...
+if not exist "%extract_path%" mkdir "%extract_path%"
+powershell -Command "Expand-Archive -Path '%zip_path%' -DestinationPath '%extract_path%' -Force"
+
+if %errorlevel% neq 0 (
+    echo [!] Erro na extracao. Tentando metodo alternativo...
+    powershell -Command "$shell = New-Object -ComObject Shell.Application; $zip = $shell.NameSpace('%zip_path%'); $dest = $shell.NameSpace('%extract_path%'); $dest.CopyHere($zip.Items(), 0x10)"
+)
+
+echo.
+echo Pronto! O Madium foi extraido na pasta: %extract_path%
+del "%zip_path%" /f /q >nul 2>&1
+pause
+goto menu
+
+:deletar_madium
+cls
+echo Killing Madium processes...
+taskkill /F /IM Madium.exe >nul 2>&1
+taskkill /F /IM madium.exe >nul 2>&1
+taskkill /F /IM Loader.exe >nul 2>&1
+
+timeout /t 1 /nobreak >nul
+
+echo Deleting %LocalAppData%\Madium...
+rmdir /S /Q "%LocalAppData%\Madium" >nul 2>&1
+
+if exist "%LocalAppData%\Madium" (
+    echo Falha ao remover a pasta. Verifique se ha processos presos.
+) else (
+    echo Limpeza concluida com sucesso.
+)
+pause
+goto menu
+
+:dependencias
+cls
+echo Iniciando processo de Dependencias...
+
+set "dep1_url=https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.27/windowsdesktop-runtime-8.0.27-win-x64.exe"
+set "dep2_url=https://aka.ms/vc14/vc_redist.x64.exe"
+set "dep3_url=https://aka.ms/vc14/vc_redist.x86.exe"
+set "dep4_url=https://go.microsoft.com/fwlink/?linkid=2124701"
+
+set "file1=%temp%\dotnet_8_runtime.exe"
+set "file2=%temp%\vc_redist_x64.exe"
+set "file3=%temp%\vc_redist_x86.exe"
+set "file4=%temp%\WebView2Setup.exe"
+
+echo [1/4] Baixando e Instalando .NET Runtime 8.0...
+curl -L -o "%file1%" "%dep1_url%"
+start /wait "" "%file1%" /install /quiet /norestart
+del "%file1%"
+
+echo [2/4] Baixando e Instalando Visual C++ Redist (x64)...
+curl -L -o "%file2%" "%dep2_url%"
+start /wait "" "%file2%" /install /quiet /norestart
+del "%file2%"
+
+echo [3/4] Baixando e Instalando Visual C++ Redist (x86)...
+curl -L -o "%file3%" "%dep3_url%"
+start /wait "" "%file3%" /install /quiet /norestart
+del "%file3%"
+
+echo [4/4] Baixando e Instalando Edge WebView2...
+curl -L -o "%file4%" "%dep4_url%"
+start /wait "" "%file4%" /silent /install
+del "%file4%"
+
+echo.
+echo Todas as dependencias foram instaladas e os arquivos temporarios removidos.
+pause
+goto menu
+
+:baixar_fishstrap
+cls
+echo ==================================================
+echo            BAIXANDO FISHSTRAP E DEPENDENCIAS
+echo ==================================================
+
+:: URLs
+set "dotnet6_url=https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/6.0.36/windowsdesktop-runtime-6.0.36-win-x64.exe"
+set "fish_url=https://fishstrap.app/Fishstrap.exe"
+
+:: Arquivos temporários
+set "dotnet6_file=%temp%\dotnet6_install.exe"
+set "fish_file=%temp%\Fishstrap_install.exe"
+
+echo [1/2] Baixando .NET Desktop Runtime 6.0...
+curl -L -o "%dotnet6_file%" "%dotnet6_url%"
+
+echo [2/2] Baixando Fishstrap...
+curl -L -o "%fish_file%" "%fish_url%"
+
+if not exist "%dotnet6_file%" (
+    echo Falha ao obter o instalador do .NET 6.0.
+    pause
+    goto menu
+)
+
+echo.
+echo Instalando .NET Desktop Runtime 6.0...
+start /wait "" "%dotnet6_file%" /install /quiet /norestart
+del "%dotnet6_file%" /f /q >nul 2>&1
+
+echo.
+echo Iniciando Fishstrap...
+if exist "%fish_file%" (
+    start "" "%fish_file%"
+    echo.
+    echo O instalador do Fishstrap foi iniciado.
+    echo Limpando arquivos temporarios em 10 segundos...
+    timeout /t 10 /nobreak >nul
+    del "%fish_file%" /f /q >nul 2>&1
+)
+
+echo.
+echo Operacao concluida.
+pause
+goto menu
