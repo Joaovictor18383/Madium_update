@@ -1,5 +1,5 @@
 @echo off
-title Madium Manager [Sky Land]
+title Madium Manager [Sky Land1]
 setlocal enabledelayedexpansion
 
 :: Check for admin privileges and elevate if needed
