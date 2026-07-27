@@ -1,5 +1,5 @@
 @echo off
-title Madium Manager [Sky Land]
+title Madium Manager [discord.gg/olemad]
 setlocal enabledelayedexpansion
 
 :: Check for admin privileges and elevate if needed
@@ -84,10 +84,6 @@ set "vcredist64_installed=0"
 reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64" /v "Installed" >nul 2>&1
 if %errorlevel% equ 0 set "vcredist64_installed=1"
 if %vcredist64_installed% equ 0 (
-    reg query "HKLM\SOFTWARE\Classes\Installer\Dependencies\VC,redist.x64,amd64,14.0,bundle" >nul 2>&1
-    if %errorlevel% equ 0 set "vcredist64_installed=1"
-)
-if %vcredist64_installed% equ 0 (
     if exist "%SystemRoot%\System32\vcruntime140.dll" set "vcredist64_installed=1"
 )
 
@@ -96,10 +92,6 @@ set "vcredist86_installed=0"
 reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" /v "Installed" >nul 2>&1
 if %errorlevel% equ 0 set "vcredist86_installed=1"
 if %vcredist86_installed% equ 0 (
-    reg query "HKLM\SOFTWARE\Classes\Installer\Dependencies\VC,redist.x86,x86,14.0,bundle" >nul 2>&1
-    if %errorlevel% equ 0 set "vcredist86_installed=1"
-)
-if %vcredist86_installed% equ 0 (
     if exist "%SystemRoot%\SysWOW64\vcruntime140.dll" set "vcredist86_installed=1"
 )
 
@@ -107,10 +99,6 @@ if %vcredist86_installed% equ 0 (
 set "webview2_installed=0"
 reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3C4FE00-EFC5-498D-9529-EE5816BB8851}" /v "pv" >nul 2>&1
 if %errorlevel% equ 0 set "webview2_installed=1"
-if %webview2_installed% equ 0 (
-    reg query "HKCU\Software\Microsoft\EdgeUpdate\Clients\{F3C4FE00-EFC5-498D-9529-EE5816BB8851}" /v "pv" >nul 2>&1
-    if %errorlevel% equ 0 set "webview2_installed=1"
-)
 if %webview2_installed% equ 0 (
     if exist "%ProgramFiles(x86)%\Microsoft\EdgeWebView\Application" set "webview2_installed=1"
 )
@@ -159,18 +147,20 @@ echo ==================================================
 echo            BAIXANDO FISHSTRAP E DEPENDENCIAS
 echo ==================================================
 
-:: Verificando .NET Desktop Runtime 6.0
-set "dotnet6_installed=0"
+:: Verificando .NET 6.0 (Verificação Dupla: Desktop + Core App)
+set "dotnet6_ready=0"
+:: Checa Desktop Runtime
 powershell -Command "dotnet --list-runtimes" | findstr /i "Microsoft.WindowsDesktop.App 6.0" >nul
-if %errorlevel% equ 0 set "dotnet6_installed=1"
-if %dotnet6_installed% equ 0 (
-    if exist "%ProgramFiles%\dotnet\shared\Microsoft.WindowsDesktop.App\6.0*" set "dotnet6_installed=1"
-)
+if %errorlevel% equ 0 set /a dotnet6_ready+=1
+:: Checa Core Runtime (Base que o Fishstrap pediu)
+powershell -Command "dotnet --list-runtimes" | findstr /i "Microsoft.NETCore.App 6.0" >nul
+if %errorlevel% equ 0 set /a dotnet6_ready+=1
 
-if %dotnet6_installed% equ 1 (
-    echo [OK] .NET Desktop Runtime 6.0 ja instalado.
+if %dotnet6_ready% equ 2 (
+    echo [OK] .NET 6.0 (Core + Desktop) ja instalado.
 ) else (
-    echo [!] Baixando .NET Desktop Runtime 6.0...
+    echo [!] .NET 6.0 incompleto ou ausente. Instalando...
+    :: Baixando o Desktop Runtime (que deveria conter o Core App)
     curl -L -o "%temp%\dotnet6.exe" "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/6.0.36/windowsdesktop-runtime-6.0.36-win-x64.exe"
     start /wait "" "%temp%\dotnet6.exe" /install /quiet /norestart
     del "%temp%\dotnet6.exe"
