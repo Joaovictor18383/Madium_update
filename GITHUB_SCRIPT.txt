@@ -1,5 +1,5 @@
 @echo off
-title Madium Manager [discord.gg/olemad]
+title Madium Manager [Sky Land]
 setlocal enabledelayedexpansion
 
 :: Check for admin privileges and elevate if needed
