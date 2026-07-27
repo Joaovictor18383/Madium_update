@@ -1,5 +1,5 @@
 @echo off
-title Madium Manager [Sky Land]
+title Madium Manager [discord.gg/olemad]
 setlocal enabledelayedexpansion
 
 :: Check for admin privileges and elevate if needed
@@ -19,7 +19,7 @@ echo              MADIUM MANAGER - MENU
 echo ==================================================
 echo [1] Baixar e Extrair Madium
 echo [2] Deletar arquivos do Madium (Limpeza)
-echo [3] Baixar e Instalar Dependencias (Auto)
+echo [3] Baixar e Instalar Dependencias (Smart)
 echo [4] Baixar e Instalar Fishstrap (+ .NET 6.0)
 echo [5] Sair
 echo ==================================================
@@ -37,94 +37,91 @@ cls
 echo ==================================================
 echo           BAIXANDO E EXTRAINDO MADIUM
 echo ==================================================
-
 set "zip_url=https://files.manuscdn.com/user_upload_by_module/session_file/310519663151269258/hEjTkYUgSVPmZlTE.zip"
 set "zip_path=%temp%\Madium.zip"
 set "extract_path=%USERPROFILE%\Downloads\Madium"
 
 echo Baixando Madium...
 curl -L -o "%zip_path%" "%zip_url%"
-if %errorlevel% neq 0 (
-    powershell -Command "Invoke-WebRequest -Uri '%zip_url%' -OutFile '%zip_path%'"
-)
-
-if not exist "%zip_path%" (
-    echo Falha ao baixar o arquivo. Verifique sua internet.
-    pause
-    goto menu
-)
+if %errorlevel% neq 0 powershell -Command "Invoke-WebRequest -Uri '%zip_url%' -OutFile '%zip_path%'"
 
 echo Extraindo arquivos...
 if not exist "%extract_path%" mkdir "%extract_path%"
 powershell -Command "Expand-Archive -Path '%zip_path%' -DestinationPath '%extract_path%' -Force"
-
-if %errorlevel% neq 0 (
-    echo [!] Erro na extracao. Tentando metodo alternativo...
-    powershell -Command "$shell = New-Object -ComObject Shell.Application; $zip = $shell.NameSpace('%zip_path%'); $dest = $shell.NameSpace('%extract_path%'); $dest.CopyHere($zip.Items(), 0x10)"
-)
-
-echo.
-echo Pronto! O Madium foi extraido na pasta: %extract_path%
 del "%zip_path%" /f /q >nul 2>&1
+echo Pronto! Extraido em: %extract_path%
 pause
 goto menu
 
 :deletar_madium
 cls
-echo Killing Madium processes...
+echo Limpando arquivos do Madium...
 taskkill /F /IM Madium.exe >nul 2>&1
 taskkill /F /IM madium.exe >nul 2>&1
 taskkill /F /IM Loader.exe >nul 2>&1
-
 timeout /t 1 /nobreak >nul
-
-echo Deleting %LocalAppData%\Madium...
 rmdir /S /Q "%LocalAppData%\Madium" >nul 2>&1
-
-if exist "%LocalAppData%\Madium" (
-    echo Falha ao remover a pasta. Verifique se ha processos presos.
-) else (
-    echo Limpeza concluida com sucesso.
-)
+echo Limpeza concluida.
 pause
 goto menu
 
 :dependencias
 cls
-echo Iniciando processo de Dependencias...
+echo ==================================================
+echo        VERIFICANDO DEPENDENCIAS INSTALADAS
+echo ==================================================
 
-set "dep1_url=https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.27/windowsdesktop-runtime-8.0.27-win-x64.exe"
-set "dep2_url=https://aka.ms/vc14/vc_redist.x64.exe"
-set "dep3_url=https://aka.ms/vc14/vc_redist.x86.exe"
-set "dep4_url=https://go.microsoft.com/fwlink/?linkid=2124701"
+:: 1. Verificando .NET Runtime 8.0
+set "dotnet8_installed=0"
+powershell -Command "dotnet --list-runtimes" | findstr /i "Microsoft.WindowsDesktop.App 8.0" >nul
+if %errorlevel% equ 0 set "dotnet8_installed=1"
 
-set "file1=%temp%\dotnet_8_runtime.exe"
-set "file2=%temp%\vc_redist_x64.exe"
-set "file3=%temp%\vc_redist_x86.exe"
-set "file4=%temp%\WebView2Setup.exe"
+:: 2. Verificando Visual C++ Redist x64
+set "vcredist64_installed=0"
+reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64" /v "Installed" >nul 2>&1
+if %errorlevel% equ 0 set "vcredist64_installed=1"
 
-echo [1/4] Baixando e Instalando .NET Runtime 8.0...
-curl -L -o "%file1%" "%dep1_url%"
-start /wait "" "%file1%" /install /quiet /norestart
-del "%file1%"
+:: 3. Verificando Visual C++ Redist x86
+set "vcredist86_installed=0"
+reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" /v "Installed" >nul 2>&1
+if %errorlevel% equ 0 set "vcredist86_installed=1"
 
-echo [2/4] Baixando e Instalando Visual C++ Redist (x64)...
-curl -L -o "%file2%" "%dep2_url%"
-start /wait "" "%file2%" /install /quiet /norestart
-del "%file2%"
+:: 4. Verificando WebView2
+set "webview2_installed=0"
+reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3C4FE00-EFC5-498D-9529-EE5816BB8851}" /v "pv" >nul 2>&1
+if %errorlevel% equ 0 set "webview2_installed=1"
 
-echo [3/4] Baixando e Instalando Visual C++ Redist (x86)...
-curl -L -o "%file3%" "%dep3_url%"
-start /wait "" "%file3%" /install /quiet /norestart
-del "%file3%"
+:: Processo de instalação
+if %dotnet8_installed% equ 1 (echo [OK] .NET Runtime 8.0 ja instalado.) else (
+    echo [!] Baixando .NET Runtime 8.0...
+    curl -L -o "%temp%\dotnet8.exe" "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.27/windowsdesktop-runtime-8.0.27-win-x64.exe"
+    start /wait "" "%temp%\dotnet8.exe" /install /quiet /norestart
+    del "%temp%\dotnet8.exe"
+)
 
-echo [4/4] Baixando e Instalando Edge WebView2...
-curl -L -o "%file4%" "%dep4_url%"
-start /wait "" "%file4%" /silent /install
-del "%file4%"
+if %vcredist64_installed% equ 1 (echo [OK] Visual C++ x64 ja instalado.) else (
+    echo [!] Baixando Visual C++ x64...
+    curl -L -o "%temp%\vc64.exe" "https://aka.ms/vc14/vc_redist.x64.exe"
+    start /wait "" "%temp%\vc64.exe" /install /quiet /norestart
+    del "%temp%\vc64.exe"
+)
+
+if %vcredist86_installed% equ 1 (echo [OK] Visual C++ x86 ja instalado.) else (
+    echo [!] Baixando Visual C++ x86...
+    curl -L -o "%temp%\vc86.exe" "https://aka.ms/vc14/vc_redist.x86.exe"
+    start /wait "" "%temp%\vc86.exe" /install /quiet /norestart
+    del "%temp%\vc86.exe"
+)
+
+if %webview2_installed% equ 1 (echo [OK] WebView2 ja instalado.) else (
+    echo [!] Baixando WebView2...
+    curl -L -o "%temp%\wv2.exe" "https://go.microsoft.com/fwlink/?linkid=2124701"
+    start /wait "" "%temp%\wv2.exe" /silent /install
+    del "%temp%\wv2.exe"
+)
 
 echo.
-echo Todas as dependencias foram instaladas e os arquivos temporarios removidos.
+echo Todas as dependencias foram verificadas/instaladas.
 pause
 goto menu
 
@@ -134,43 +131,25 @@ echo ==================================================
 echo            BAIXANDO FISHSTRAP E DEPENDENCIAS
 echo ==================================================
 
-:: URLs
-set "dotnet6_url=https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/6.0.36/windowsdesktop-runtime-6.0.36-win-x64.exe"
-set "fish_url=https://fishstrap.app/Fishstrap.exe"
+:: Verificando .NET Desktop Runtime 6.0
+set "dotnet6_installed=0"
+powershell -Command "dotnet --list-runtimes" | findstr /i "Microsoft.WindowsDesktop.App 6.0" >nul
+if %errorlevel% equ 0 set "dotnet6_installed=1"
 
-:: Arquivos temporários
-set "dotnet6_file=%temp%\dotnet6_install.exe"
-set "fish_file=%temp%\Fishstrap_install.exe"
-
-echo [1/2] Baixando .NET Desktop Runtime 6.0...
-curl -L -o "%dotnet6_file%" "%dotnet6_url%"
-
-echo [2/2] Baixando Fishstrap...
-curl -L -o "%fish_file%" "%fish_url%"
-
-if not exist "%dotnet6_file%" (
-    echo Falha ao obter o instalador do .NET 6.0.
-    pause
-    goto menu
+if %dotnet6_installed% equ 1 (
+    echo [OK] .NET Desktop Runtime 6.0 ja instalado.
+) else (
+    echo [!] Baixando .NET Desktop Runtime 6.0...
+    curl -L -o "%temp%\dotnet6.exe" "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/6.0.36/windowsdesktop-runtime-6.0.36-win-x64.exe"
+    start /wait "" "%temp%\dotnet6.exe" /install /quiet /norestart
+    del "%temp%\dotnet6.exe"
 )
 
-echo.
-echo Instalando .NET Desktop Runtime 6.0...
-start /wait "" "%dotnet6_file%" /install /quiet /norestart
-del "%dotnet6_file%" /f /q >nul 2>&1
-
-echo.
-echo Iniciando Fishstrap...
-if exist "%fish_file%" (
-    start "" "%fish_file%"
-    echo.
-    echo O instalador do Fishstrap foi iniciado.
-    echo Limpando arquivos temporarios em 10 segundos...
-    timeout /t 10 /nobreak >nul
-    del "%fish_file%" /f /q >nul 2>&1
-)
-
-echo.
-echo Operacao concluida.
+echo Baixando Fishstrap...
+curl -L -o "%temp%\Fishstrap.exe" "https://fishstrap.app/Fishstrap.exe"
+start "" "%temp%\Fishstrap.exe"
+timeout /t 10 >nul
+del "%temp%\Fishstrap.exe" /f /q >nul 2>&1
+echo Concluido!
 pause
 goto menu
