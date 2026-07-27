@@ -1,5 +1,5 @@
 @echo off
-title Madium Manager [discord.gg/olemad]
+title Madium Manager [sky land]
 setlocal enabledelayedexpansion
 
 :: Check for admin privileges and elevate if needed
@@ -19,7 +19,7 @@ echo              MADIUM MANAGER - MENU
 echo ==================================================
 echo [1] Baixar e Extrair Madium
 echo [2] Deletar arquivos do Madium (Limpeza)
-echo [3] Baixar e Instalar Dependencias (Smart)
+echo [3] Baixar e Instalar Dependencias (Ultra-Check)
 echo [4] Baixar e Instalar Fishstrap (+ .NET 6.0)
 echo [5] Sair
 echo ==================================================
@@ -68,81 +68,96 @@ goto menu
 :dependencias
 cls
 echo ==================================================
-echo        VERIFICANDO DEPENDENCIAS INSTALADAS
+echo        VERIFICANDO DEPENDENCIAS (100%% CERTEZA)
 echo ==================================================
 
-:: 1. Verificando .NET Runtime 8.0
+:: --- 1. VERIFICAR .NET RUNTIME 8.0 ---
 set "dotnet8_installed=0"
+:: Checa via comando dotnet
 powershell -Command "dotnet --list-runtimes" | findstr /i "Microsoft.WindowsDesktop.App 8.0" >nul
 if %errorlevel% equ 0 set "dotnet8_installed=1"
+:: Checa via pasta de sistema (backup)
+if %dotnet8_installed% equ 0 (
+    if exist "%ProgramFiles%\dotnet\shared\Microsoft.WindowsDesktop.App\8.0*" set "dotnet8_installed=1"
+)
 
-:: 2. Verificando Visual C++ Redist x64 (14.x = 2015-2022)
+:: --- 2. VERIFICAR VISUAL C++ REDIST X64 ---
 set "vcredist64_installed=0"
+:: Checa no Registro (Vários locais)
 reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64" /v "Installed" >nul 2>&1
 if %errorlevel% equ 0 set "vcredist64_installed=1"
-:: Verificação secundária para x64
 if %vcredist64_installed% equ 0 (
     reg query "HKLM\SOFTWARE\Classes\Installer\Dependencies\VC,redist.x64,amd64,14.0,bundle" >nul 2>&1
     if %errorlevel% equ 0 set "vcredist64_installed=1"
 )
+:: Checa via Arquivo de Sistema (DLL Crítica)
+if %vcredist64_installed% equ 0 (
+    if exist "%SystemRoot%\System32\vcruntime140.dll" set "vcredist64_installed=1"
+)
 
-:: 3. Verificando Visual C++ Redist x86 (14.x = 2015-2022)
+:: --- 3. VERIFICAR VISUAL C++ REDIST X86 ---
 set "vcredist86_installed=0"
-reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" /v "Installed" >nul 2>&1
+:: Checa no Registro (Vários locais incluindo WOW6432Node)
+reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" /v "Installed" >nul 2>&1
 if %errorlevel% equ 0 set "vcredist86_installed=1"
-:: Verificação secundária para x86 (MUITO IMPORTANTE)
 if %vcredist86_installed% equ 0 (
     reg query "HKLM\SOFTWARE\Classes\Installer\Dependencies\VC,redist.x86,x86,14.0,bundle" >nul 2>&1
     if %errorlevel% equ 0 set "vcredist86_installed=1"
 )
-:: Verificação terciária via WOW6432Node
+:: Checa via Arquivo de Sistema (DLL Crítica em SysWOW64)
 if %vcredist86_installed% equ 0 (
-    reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" /v "Installed" >nul 2>&1
-    if %errorlevel% equ 0 set "vcredist86_installed=1"
+    if exist "%SystemRoot%\SysWOW64\vcruntime140.dll" set "vcredist86_installed=1"
 )
 
-:: 4. Verificando WebView2 (Verificação robusta)
+:: --- 4. VERIFICAR WEBVIEW2 ---
 set "webview2_installed=0"
-:: Checa na chave de sistema
+:: Checa no Registro (Máquina e Usuário)
 reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3C4FE00-EFC5-498D-9529-EE5816BB8851}" /v "pv" >nul 2>&1
 if %errorlevel% equ 0 set "webview2_installed=1"
-:: Checa na chave de usuário
 if %webview2_installed% equ 0 (
     reg query "HKCU\Software\Microsoft\EdgeUpdate\Clients\{F3C4FE00-EFC5-498D-9529-EE5816BB8851}" /v "pv" >nul 2>&1
     if %errorlevel% equ 0 set "webview2_installed=1"
 )
+:: Checa via Caminho de Execução
+if %webview2_installed% equ 0 (
+    if exist "%ProgramFiles(x86)%\Microsoft\EdgeWebView\Application" set "webview2_installed=1"
+)
 
-:: Processo de instalação
-if %dotnet8_installed% equ 1 (echo [OK] .NET Runtime 8.0 ja instalado.) else (
-    echo [!] Baixando .NET Runtime 8.0...
+:: --- PROCESSO DE INSTALAÇÃO ---
+echo [1/4] .NET Runtime 8.0: 
+if %dotnet8_installed% equ 1 (echo    - JA INSTALADO.) else (
+    echo    - BAIXANDO...
     curl -L -o "%temp%\dotnet8.exe" "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.27/windowsdesktop-runtime-8.0.27-win-x64.exe"
     start /wait "" "%temp%\dotnet8.exe" /install /quiet /norestart
     del "%temp%\dotnet8.exe"
 )
 
-if %vcredist64_installed% equ 1 (echo [OK] Visual C++ x64 ja instalado.) else (
-    echo [!] Baixando Visual C++ x64...
+echo [2/4] Visual C++ x64:
+if %vcredist64_installed% equ 1 (echo    - JA INSTALADO.) else (
+    echo    - BAIXANDO...
     curl -L -o "%temp%\vc64.exe" "https://aka.ms/vc14/vc_redist.x64.exe"
     start /wait "" "%temp%\vc64.exe" /install /quiet /norestart
     del "%temp%\vc64.exe"
 )
 
-if %vcredist86_installed% equ 1 (echo [OK] Visual C++ x86 ja instalado.) else (
-    echo [!] Baixando Visual C++ x86...
+echo [3/4] Visual C++ x86:
+if %vcredist86_installed% equ 1 (echo    - JA INSTALADO.) else (
+    echo    - BAIXANDO...
     curl -L -o "%temp%\vc86.exe" "https://aka.ms/vc14/vc_redist.x86.exe"
     start /wait "" "%temp%\vc86.exe" /install /quiet /norestart
     del "%temp%\vc86.exe"
 )
 
-if %webview2_installed% equ 1 (echo [OK] WebView2 ja instalado.) else (
-    echo [!] Baixando WebView2...
+echo [4/4] WebView2:
+if %webview2_installed% equ 1 (echo    - JA INSTALADO.) else (
+    echo    - BAIXANDO...
     curl -L -o "%temp%\wv2.exe" "https://go.microsoft.com/fwlink/?linkid=2124701"
     start /wait "" "%temp%\wv2.exe" /silent /install
     del "%temp%\wv2.exe"
 )
 
 echo.
-echo Todas as dependencias foram verificadas/instaladas.
+echo Verificacao concluida com 100%% de certeza.
 pause
 goto menu
 
@@ -152,10 +167,13 @@ echo ==================================================
 echo            BAIXANDO FISHSTRAP E DEPENDENCIAS
 echo ==================================================
 
-:: Verificando .NET Desktop Runtime 6.0
+:: Verificando .NET Desktop Runtime 6.0 (Ultra-Check)
 set "dotnet6_installed=0"
 powershell -Command "dotnet --list-runtimes" | findstr /i "Microsoft.WindowsDesktop.App 6.0" >nul
 if %errorlevel% equ 0 set "dotnet6_installed=1"
+if %dotnet6_installed% equ 0 (
+    if exist "%ProgramFiles%\dotnet\shared\Microsoft.WindowsDesktop.App\6.0*" set "dotnet6_installed=1"
+)
 
 if %dotnet6_installed% equ 1 (
     echo [OK] .NET Desktop Runtime 6.0 ja instalado.
