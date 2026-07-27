@@ -1,5 +1,5 @@
 @echo off
-title Madium Manager [Sky Land]
+title Madium Manager [discord.gg/olemad]
 setlocal enabledelayedexpansion
 
 :: Check for admin privileges and elevate if needed
@@ -76,20 +76,41 @@ set "dotnet8_installed=0"
 powershell -Command "dotnet --list-runtimes" | findstr /i "Microsoft.WindowsDesktop.App 8.0" >nul
 if %errorlevel% equ 0 set "dotnet8_installed=1"
 
-:: 2. Verificando Visual C++ Redist x64
+:: 2. Verificando Visual C++ Redist x64 (14.x = 2015-2022)
 set "vcredist64_installed=0"
 reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64" /v "Installed" >nul 2>&1
 if %errorlevel% equ 0 set "vcredist64_installed=1"
+:: Verificação secundária para x64
+if %vcredist64_installed% equ 0 (
+    reg query "HKLM\SOFTWARE\Classes\Installer\Dependencies\VC,redist.x64,amd64,14.0,bundle" >nul 2>&1
+    if %errorlevel% equ 0 set "vcredist64_installed=1"
+)
 
-:: 3. Verificando Visual C++ Redist x86
+:: 3. Verificando Visual C++ Redist x86 (14.x = 2015-2022)
 set "vcredist86_installed=0"
 reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" /v "Installed" >nul 2>&1
 if %errorlevel% equ 0 set "vcredist86_installed=1"
+:: Verificação secundária para x86 (MUITO IMPORTANTE)
+if %vcredist86_installed% equ 0 (
+    reg query "HKLM\SOFTWARE\Classes\Installer\Dependencies\VC,redist.x86,x86,14.0,bundle" >nul 2>&1
+    if %errorlevel% equ 0 set "vcredist86_installed=1"
+)
+:: Verificação terciária via WOW6432Node
+if %vcredist86_installed% equ 0 (
+    reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" /v "Installed" >nul 2>&1
+    if %errorlevel% equ 0 set "vcredist86_installed=1"
+)
 
-:: 4. Verificando WebView2
+:: 4. Verificando WebView2 (Verificação robusta)
 set "webview2_installed=0"
+:: Checa na chave de sistema
 reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3C4FE00-EFC5-498D-9529-EE5816BB8851}" /v "pv" >nul 2>&1
 if %errorlevel% equ 0 set "webview2_installed=1"
+:: Checa na chave de usuário
+if %webview2_installed% equ 0 (
+    reg query "HKCU\Software\Microsoft\EdgeUpdate\Clients\{F3C4FE00-EFC5-498D-9529-EE5816BB8851}" /v "pv" >nul 2>&1
+    if %errorlevel% equ 0 set "webview2_installed=1"
+)
 
 :: Processo de instalação
 if %dotnet8_installed% equ 1 (echo [OK] .NET Runtime 8.0 ja instalado.) else (
