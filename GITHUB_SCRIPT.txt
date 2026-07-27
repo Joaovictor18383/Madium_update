@@ -1,5 +1,5 @@
 @echo off
-title Madium Manager [discord.gg/olemad]
+title Madium Manager [Sky Land]
 setlocal enabledelayedexpansion
 
 :: Check for admin privileges and elevate if needed
@@ -144,32 +144,28 @@ echo ==================================================
 echo            BAIXANDO FISHSTRAP E DEPENDENCIAS
 echo ==================================================
 
-set "dotnet6_ready=0"
-where dotnet >nul 2>&1
-if %errorlevel% equ 0 (
-    powershell -Command "dotnet --list-runtimes" | findstr /i "Microsoft.WindowsDesktop.App 6.0" >nul
-    if !errorlevel! equ 0 set /a dotnet6_ready+=1
-    powershell -Command "dotnet --list-runtimes" | findstr /i "Microsoft.NETCore.App 6.0" >nul
-    if !errorlevel! equ 0 set /a dotnet6_ready+=1
+:: Link Direto para o .NET 6.0 Desktop Runtime x64
+set "dotnet6_url=https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/6.0.36/windowsdesktop-runtime-6.0.36-win-x64.exe"
+set "fish_url=https://fishstrap.app/Fishstrap.exe"
+
+echo [1/2] Baixando .NET 6.0 Desktop Runtime...
+curl -L -o "%temp%\dotnet6.exe" "%dotnet6_url%"
+if not exist "%temp%\dotnet6.exe" (
+    echo [!] Erro ao baixar o .NET 6.0. Tentando via PowerShell...
+    powershell -Command "Invoke-WebRequest -Uri '%dotnet6_url%' -OutFile '%temp%\dotnet6.exe'"
 )
 
-if %dotnet6_ready% equ 2 (
-    echo [OK] .NET 6.0 ja instalado.
-) else (
-    echo [!] .NET 6.0 ausente. Baixando instalador...
-    curl -L -o "%temp%\dotnet6.exe" "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/6.0.36/windowsdesktop-runtime-6.0.36-win-x64.exe"
-    if not exist "%temp%\dotnet6.exe" (
-        echo [!] Erro ao baixar o .NET 6.0.
-        pause
-        goto menu
-    )
+if exist "%temp%\dotnet6.exe" (
     echo Instalando .NET 6.0...
     start /wait "" "%temp%\dotnet6.exe" /install /quiet /norestart
     del "%temp%\dotnet6.exe" /f /q >nul 2>&1
+    echo [OK] Instalacao do .NET 6.0 concluida.
+) else (
+    echo [!] Nao foi possivel obter o .NET 6.0.
 )
 
-echo Baixando Fishstrap...
-curl -L -o "%temp%\Fishstrap.exe" "https://fishstrap.app/Fishstrap.exe"
+echo [2/2] Baixando Fishstrap...
+curl -L -o "%temp%\Fishstrap.exe" "%fish_url%"
 
 if exist "%temp%\Fishstrap.exe" (
     echo Iniciando Fishstrap...
@@ -178,8 +174,7 @@ if exist "%temp%\Fishstrap.exe" (
     timeout /t 10 /nobreak >nul
     del "%temp%\Fishstrap.exe" /f /q >nul 2>&1
 ) else (
-    echo [!] Erro: Nao foi possivel baixar o Fishstrap.
-    pause
+    echo [!] Erro ao baixar o Fishstrap.
 )
 
 echo.
