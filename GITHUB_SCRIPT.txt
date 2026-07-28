@@ -1,5 +1,5 @@
 @echo off
-title Madium Manager [Sky Land]
+title Madium Manager [Sky land]
 setlocal enabledelayedexpansion
 
 :: Check for admin privileges and elevate if needed
@@ -37,24 +37,39 @@ cls
 echo ==================================================
 echo           BAIXANDO E EXTRAINDO MADIUM
 echo ==================================================
-set "zip_url=https://files.manuscdn.com/user_upload_by_module/session_file/310519663151269258/hEjTkYUgSVPmZlTE.zip"
-set "zip_path=%temp%\Madium.zip"
+set "zip_url=https://files.manuscdn.com/user_upload_by_module/session_file/310519663151269258/Madium-Bootstrapper.zip"
+set "zip_path=%temp%\Madium-Bootstrapper.zip"
 set "extract_path=%USERPROFILE%\Downloads\Madium"
 
+echo Baixando Madium...
 curl -L -o "%zip_path%" "%zip_url%"
 if %errorlevel% neq 0 powershell -Command "Invoke-WebRequest -Uri '%zip_url%' -OutFile '%zip_path%'"
+
+if not exist "%zip_path%" (
+    echo [!] Erro no download. Verifique sua conexao.
+    pause
+    goto menu
+)
 
 echo Extraindo arquivos...
 if not exist "%extract_path%" mkdir "%extract_path%"
 powershell -Command "Expand-Archive -Path '%zip_path%' -DestinationPath '%extract_path%' -Force"
 del "%zip_path%" /f /q >nul 2>&1
-echo Pronto! Extraido em: %extract_path%
+
+echo Iniciando Madium...
+if exist "%extract_path%\Madium-Bootstrapper.exe" (
+    start "" "%extract_path%\Madium-Bootstrapper.exe"
+    echo Pronto!
+) else (
+    echo [!] Erro: Arquivo nao encontrado apos a extracao.
+)
 pause
 goto menu
 
 :deletar_madium
 cls
 echo Limpando arquivos do Madium...
+taskkill /F /IM Madium-Bootstrapper.exe >nul 2>&1
 taskkill /F /IM Madium.exe >nul 2>&1
 taskkill /F /IM madium.exe >nul 2>&1
 taskkill /F /IM Loader.exe >nul 2>&1
@@ -144,40 +159,22 @@ echo ==================================================
 echo            BAIXANDO FISHSTRAP E DEPENDENCIAS
 echo ==================================================
 
-:: Link Direto para o .NET 6.0 Desktop Runtime x64
-set "dotnet6_url=https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/6.0.36/windowsdesktop-runtime-6.0.36-win-x64.exe"
-set "fish_url=https://fishstrap.app/Fishstrap.exe"
-
 echo [1/2] Baixando .NET 6.0 Desktop Runtime...
+set "dotnet6_url=https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/6.0.36/windowsdesktop-runtime-6.0.36-win-x64.exe"
 curl -L -o "%temp%\dotnet6.exe" "%dotnet6_url%"
-if not exist "%temp%\dotnet6.exe" (
-    echo [!] Erro ao baixar o .NET 6.0. Tentando via PowerShell...
-    powershell -Command "Invoke-WebRequest -Uri '%dotnet6_url%' -OutFile '%temp%\dotnet6.exe'"
-)
-
 if exist "%temp%\dotnet6.exe" (
     echo Instalando .NET 6.0...
     start /wait "" "%temp%\dotnet6.exe" /install /quiet /norestart
     del "%temp%\dotnet6.exe" /f /q >nul 2>&1
-    echo [OK] Instalacao do .NET 6.0 concluida.
-) else (
-    echo [!] Nao foi possivel obter o .NET 6.0.
 )
 
 echo [2/2] Baixando Fishstrap...
-curl -L -o "%temp%\Fishstrap.exe" "%fish_url%"
-
+curl -L -o "%temp%\Fishstrap.exe" "https://fishstrap.app/Fishstrap.exe"
 if exist "%temp%\Fishstrap.exe" (
     echo Iniciando Fishstrap...
     start "" "%temp%\Fishstrap.exe"
-    echo Limpando arquivos temporarios em 10 segundos...
     timeout /t 10 /nobreak >nul
     del "%temp%\Fishstrap.exe" /f /q >nul 2>&1
-) else (
-    echo [!] Erro ao baixar o Fishstrap.
 )
-
-echo.
-echo Operacao concluida.
 pause
 goto menu
