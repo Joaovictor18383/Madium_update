@@ -37,34 +37,24 @@ cls
 echo ==================================================
 echo           BAIXANDO E EXTRAINDO MADIUM
 echo ==================================================
-:: ATENCAO: Voce deve colocar o link direto do seu GitHub aqui
-set "zip_url=COLOQUE_AQUI_O_LINK_DIRETO_DO_SEU_ZIP"
+:: LINK DIRETO CONFIGURADO PELO MANUS
+set "zip_url=https://files.manuscdn.com/user_upload_by_module/session_file/310519663151269258/SvXkjfJwkWxpSZME.zip"
 set "zip_path=%temp%\Madium-Bootstrapper.zip"
 set "extract_path=%USERPROFILE%\Downloads\Madium"
-
-if "%zip_url%"=="COLOQUE_AQUI_O_LINK_DIRETO_DO_SEU_ZIP" (
-    echo [!] Erro: Voce ainda nao configurou o link do download no script.
-    echo Edite o arquivo .bat e coloque o link na variavel zip_url.
-    pause
-    goto menu
-)
 
 echo Baixando Madium...
 curl -L -o "%zip_path%" "%zip_url%"
 
-:: --- VERIFICACAO DE INTEGRIDADE (100% CERTEZA) ---
+:: Verificacao de integridade
 if not exist "%zip_path%" (
-    echo [!] Erro: O download falhou completamente.
+    echo [!] Erro no download.
     pause
     goto menu
 )
 
-:: Verifica se o arquivo tem menos de 100KB (Arquivos corrompidos/links falsos costumam ser pequenos)
 for %%I in ("%zip_path%") do set "size=%%~zI"
 if !size! LSS 102400 (
-    echo [!] ERRO CRITICO: O arquivo baixado e muito pequeno (!size! bytes).
-    echo O link de download provavelmente expirou ou e invalido.
-    echo Por favor, use um link direto do GitHub ou Discord.
+    echo [!] Erro: Arquivo corrompido ou link invalido (!size! bytes).
     del "%zip_path%" /f /q >nul 2>&1
     pause
     goto menu
@@ -72,14 +62,10 @@ if !size! LSS 102400 (
 
 echo Extraindo arquivos...
 if not exist "%extract_path%" mkdir "%extract_path%"
-
-:: Tenta extrair usando tar (mais rapido e estavel no Win10/11)
 tar -xf "%zip_path%" -C "%extract_path%" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo [!] Falha no metodo principal. Tentando via PowerShell...
     powershell -Command "Expand-Archive -Path '%zip_path%' -DestinationPath '%extract_path%' -Force"
 )
-
 del "%zip_path%" /f /q >nul 2>&1
 
 echo Iniciando Madium...
@@ -87,8 +73,7 @@ if exist "%extract_path%\Madium-Bootstrapper.exe" (
     start "" "%extract_path%\Madium-Bootstrapper.exe"
     echo Pronto!
 ) else (
-    echo [!] Erro: Madium-Bootstrapper.exe nao encontrado apos a extracao.
-    echo Verifique se o nome do arquivo dentro do ZIP e exatamente: Madium-Bootstrapper.exe
+    echo [!] Erro: Madium-Bootstrapper.exe nao encontrado.
 )
 pause
 goto menu
