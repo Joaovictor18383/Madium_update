@@ -1,8 +1,8 @@
 @echo off
-title Madium Manager [Sky land]
+title Madium Manager [Sky Land]
 setlocal enabledelayedexpansion
 
-:: Check for admin privileges and elevate if needed
+:: Verifica privilégios de administrador
 net session >nul 2>&1
 if %errorlevel% neq 0 (
     echo ==================================================
@@ -37,7 +37,6 @@ cls
 echo ==================================================
 echo           BAIXANDO E EXTRAINDO MADIUM
 echo ==================================================
-:: LINK DIRETO CONFIGURADO PELO MANUS
 set "zip_url=https://files.manuscdn.com/user_upload_by_module/session_file/310519663151269258/SvXkjfJwkWxpSZME.zip"
 set "zip_path=%temp%\Madium-Bootstrapper.zip"
 set "extract_path=%USERPROFILE%\Downloads\Madium"
@@ -45,36 +44,24 @@ set "extract_path=%USERPROFILE%\Downloads\Madium"
 echo Baixando Madium...
 curl -L -o "%zip_path%" "%zip_url%"
 
-:: Verificacao de integridade
-if not exist "%zip_path%" (
-    echo [!] Erro no download.
-    pause
-    goto menu
-)
+:: Verificação de erro sem usar blocos de parênteses (Mais estável)
+if not exist "%zip_path%" echo [!] Erro no download. && pause && goto menu
 
-for %%I in ("%zip_path%") do set "size=%%~zI"
-if !size! LSS 102400 (
-    echo [!] Erro: Arquivo corrompido ou link invalido (!size! bytes).
-    del "%zip_path%" /f /q >nul 2>&1
-    pause
-    goto menu
-)
+:: Verificação de tamanho simplificada
+for %%I in ("%zip_path%") do set "fsize=%%~zI"
+if !fsize! LSS 102400 echo [!] Erro: Arquivo corrompido (!fsize! bytes). && del "%zip_path%" /f /q >nul 2>&1 && pause && goto menu
 
 echo Extraindo arquivos...
 if not exist "%extract_path%" mkdir "%extract_path%"
 tar -xf "%zip_path%" -C "%extract_path%" >nul 2>&1
-if %errorlevel% neq 0 (
-    powershell -Command "Expand-Archive -Path '%zip_path%' -DestinationPath '%extract_path%' -Force"
-)
+if %errorlevel% neq 0 powershell -Command "Expand-Archive -Path '%zip_path%' -DestinationPath '%extract_path%' -Force"
+
 del "%zip_path%" /f /q >nul 2>&1
 
 echo Iniciando Madium...
-if exist "%extract_path%\Madium-Bootstrapper.exe" (
-    start "" "%extract_path%\Madium-Bootstrapper.exe"
-    echo Pronto!
-) else (
-    echo [!] Erro: Madium-Bootstrapper.exe nao encontrado.
-)
+if exist "%extract_path%\Madium-Bootstrapper.exe" start "" "%extract_path%\Madium-Bootstrapper.exe"
+if not exist "%extract_path%\Madium-Bootstrapper.exe" echo [!] Erro: Madium-Bootstrapper.exe nao encontrado.
+
 pause
 goto menu
 
@@ -103,30 +90,19 @@ if %errorlevel% equ 0 (
     powershell -Command "dotnet --list-runtimes" | findstr /i "Microsoft.WindowsDesktop.App 8.0" >nul
     if !errorlevel! equ 0 set "dotnet8_installed=1"
 )
-if %dotnet8_installed% equ 0 (
-    if exist "%ProgramFiles%\dotnet\shared\Microsoft.WindowsDesktop.App\8.0*" set "dotnet8_installed=1"
-)
+if %dotnet8_installed% equ 0 if exist "%ProgramFiles%\dotnet\shared\Microsoft.WindowsDesktop.App\8.0*" set "dotnet8_installed=1"
 
 set "vcredist64_installed=0"
-reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64" /v "Installed" >nul 2>&1
-if %errorlevel% equ 0 set "vcredist64_installed=1"
-if %vcredist64_installed% equ 0 (
-    if exist "%SystemRoot%\System32\vcruntime140.dll" set "vcredist64_installed=1"
-)
+reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64" /v "Installed" >nul 2>&1 && set "vcredist64_installed=1"
+if %vcredist64_installed% equ 0 if exist "%SystemRoot%\System32\vcruntime140.dll" set "vcredist64_installed=1"
 
 set "vcredist86_installed=0"
-reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" /v "Installed" >nul 2>&1
-if %errorlevel% equ 0 set "vcredist86_installed=1"
-if %vcredist86_installed% equ 0 (
-    if exist "%SystemRoot%\SysWOW64\vcruntime140.dll" set "vcredist86_installed=1"
-)
+reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" /v "Installed" >nul 2>&1 && set "vcredist86_installed=1"
+if %vcredist86_installed% equ 0 if exist "%SystemRoot%\SysWOW64\vcruntime140.dll" set "vcredist86_installed=1"
 
 set "webview2_installed=0"
-reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3C4FE00-EFC5-498D-9529-EE5816BB8851}" /v "pv" >nul 2>&1
-if %errorlevel% equ 0 set "webview2_installed=1"
-if %webview2_installed% equ 0 (
-    if exist "%ProgramFiles(x86)%\Microsoft\EdgeWebView\Application" set "webview2_installed=1"
-)
+reg query "HKLM\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3C4FE00-EFC5-498D-9529-EE5816BB8851}" /v "pv" >nul 2>&1 && set "webview2_installed=1"
+if %webview2_installed% equ 0 if exist "%ProgramFiles(x86)%\Microsoft\EdgeWebView\Application" set "webview2_installed=1"
 
 echo [1/4] .NET Runtime 8.0: 
 if %dotnet8_installed% equ 1 (echo    - JA INSTALADO.) else (
@@ -171,20 +147,15 @@ echo ==================================================
 echo            BAIXANDO FISHSTRAP E DEPENDENCIAS
 echo ==================================================
 
-set "dotnet6_url=https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/6.0.36/windowsdesktop-runtime-6.0.36-win-x64.exe"
 echo [1/2] Baixando .NET 6.0 Desktop Runtime...
-curl -L -o "%temp%\dotnet6.exe" "%dotnet6_url%"
-if exist "%temp%\dotnet6.exe" (
-    start /wait "" "%temp%\dotnet6.exe" /install /quiet /norestart
-    del "%temp%\dotnet6.exe" /f /q >nul 2>&1
-)
+curl -L -o "%temp%\dotnet6.exe" "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/6.0.36/windowsdesktop-runtime-6.0.36-win-x64.exe"
+if exist "%temp%\dotnet6.exe" start /wait "" "%temp%\dotnet6.exe" /install /quiet /norestart && del "%temp%\dotnet6.exe" /f /q >nul 2>&1
 
 echo [2/2] Baixando Fishstrap...
 curl -L -o "%temp%\Fishstrap.exe" "https://fishstrap.app/Fishstrap.exe"
-if exist "%temp%\Fishstrap.exe" (
-    start "" "%temp%\Fishstrap.exe"
-    timeout /t 10 /nobreak >nul
-    del "%temp%\Fishstrap.exe" /f /q >nul 2>&1
-)
+if exist "%temp%\Fishstrap.exe" start "" "%temp%\Fishstrap.exe" && timeout /t 10 /nobreak >nul && del "%temp%\Fishstrap.exe" /f /q >nul 2>&1
+
+echo.
+echo Operacao concluida.
 pause
 goto menu
