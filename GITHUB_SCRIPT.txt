@@ -1,5 +1,5 @@
 @echo off
-title Madium Manager [Sky Land]
+title Madium Manager [Sky land]
 setlocal enabledelayedexpansion
 
 :: Verifica privilégios de administrador
@@ -44,11 +44,9 @@ set "extract_path=%USERPROFILE%\Downloads\Madium"
 echo Baixando Madium...
 curl -L -o "%zip_path%" "%zip_url%"
 
-:: Verificação de erro sem usar blocos de parênteses (Mais estável)
 if not exist "%zip_path%" echo [!] Erro no download. && pause && goto menu
 
-:: Verificação de tamanho simplificada
-for %%I in ("%zip_path%") do set "fsize=%%~zI"
+for %%I in ("%zip_path%" ) do set "fsize=%%~zI"
 if !fsize! LSS 102400 echo [!] Erro: Arquivo corrompido (!fsize! bytes). && del "%zip_path%" /f /q >nul 2>&1 && pause && goto menu
 
 echo Extraindo arquivos...
@@ -67,13 +65,34 @@ goto menu
 
 :deletar_madium
 cls
-echo Limpando arquivos do Madium...
-taskkill /F /IM Madium-Bootstrapper.exe >nul 2>&1
-taskkill /F /IM Madium.exe >nul 2>&1
-taskkill /F /IM madium.exe >nul 2>&1
-taskkill /F /IM Loader.exe >nul 2>&1
-timeout /t 1 /nobreak >nul
-rmdir /S /Q "%LocalAppData%\Madium" >nul 2>&1
+echo ==================================================
+echo             LIMPANDO ARQUIVOS DO MADIUM
+echo ==================================================
+echo Encerrando processos...
+taskkill /F /IM Madium-Bootstrapper.exe /T >nul 2>&1
+taskkill /F /IM Madium.exe /T >nul 2>&1
+taskkill /F /IM madium.exe /T >nul 2>&1
+taskkill /F /IM Loader.exe /T >nul 2>&1
+timeout /t 2 /nobreak >nul
+
+echo Removendo pasta em AppData Local...
+if exist "%LocalAppData%\Madium" (
+    del /f /s /q "%LocalAppData%\Madium\*.*" >nul 2>&1
+    rmdir /s /q "%LocalAppData%\Madium" >nul 2>&1
+)
+
+if exist "%LocalAppData%\Madium" (
+    echo [!] Tentando limpeza forcada...
+    powershell -Command "Remove-Item -Path '$env:LocalAppData\Madium' -Recurse -Force -ErrorAction SilentlyContinue"
+)
+
+if exist "%LocalAppData%\Madium" (
+    echo [!] Aviso: Alguns arquivos em uso nao puderam ser removidos totalmente.
+) else (
+    echo [OK] Pasta Madium removida com sucesso de AppData\Local.
+)
+
+echo.
 echo Limpeza concluida.
 pause
 goto menu
@@ -110,7 +129,7 @@ if %dotnet8_installed% equ 1 (echo    - JA INSTALADO.) else (
     curl -L -o "%temp%\dotnet8.exe" "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.27/windowsdesktop-runtime-8.0.27-win-x64.exe"
     start /wait "" "%temp%\dotnet8.exe" /install /quiet /norestart
     del "%temp%\dotnet8.exe" /f /q >nul 2>&1
-)
+ )
 
 echo [2/4] Visual C++ x64:
 if %vcredist64_installed% equ 1 (echo    - JA INSTALADO.) else (
@@ -118,7 +137,7 @@ if %vcredist64_installed% equ 1 (echo    - JA INSTALADO.) else (
     curl -L -o "%temp%\vc64.exe" "https://aka.ms/vc14/vc_redist.x64.exe"
     start /wait "" "%temp%\vc64.exe" /install /quiet /norestart
     del "%temp%\vc64.exe" /f /q >nul 2>&1
-)
+ )
 
 echo [3/4] Visual C++ x86:
 if %vcredist86_installed% equ 1 (echo    - JA INSTALADO.) else (
@@ -126,7 +145,7 @@ if %vcredist86_installed% equ 1 (echo    - JA INSTALADO.) else (
     curl -L -o "%temp%\vc86.exe" "https://aka.ms/vc14/vc_redist.x86.exe"
     start /wait "" "%temp%\vc86.exe" /install /quiet /norestart
     del "%temp%\vc86.exe" /f /q >nul 2>&1
-)
+ )
 
 echo [4/4] WebView2:
 if %webview2_installed% equ 1 (echo    - JA INSTALADO.) else (
@@ -134,7 +153,7 @@ if %webview2_installed% equ 1 (echo    - JA INSTALADO.) else (
     curl -L -o "%temp%\wv2.exe" "https://go.microsoft.com/fwlink/?linkid=2124701"
     start /wait "" "%temp%\wv2.exe" /silent /install
     del "%temp%\wv2.exe" /f /q >nul 2>&1
-)
+ )
 
 echo.
 echo Operacao concluida.
