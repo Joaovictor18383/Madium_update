@@ -1,5 +1,5 @@
 @echo off
-title Madium Manager [Sky land]
+title Madium Manager [Sky Land]
 setlocal enabledelayedexpansion
 
 :: Verifica privilégios de administrador
@@ -18,19 +18,19 @@ echo ==================================================
 echo              MADIUM MANAGER - MENU
 echo ==================================================
 echo [1] Baixar e Extrair Madium
-echo [2] Deletar arquivos do Madium (Limpeza)
-echo [3] Baixar e Instalar Dependencias
-echo [4] Baixar e Instalar Fishstrap
-echo [5] Nova versao do madium que tem key
+echo [2] nova versao do madium mais tem key
+echo [3] Deletar arquivos do Madium (Limpeza)
+echo [4] Baixar e Instalar Dependencias
+echo [5] Baixar e Instalar Fishstrap
 echo [6] Sair
 echo ==================================================
 set /p opt="Escolha uma opcao: "
 
 if "%opt%"=="1" goto baixar_madium
-if "%opt%"=="2" goto deletar_madium
-if "%opt%"=="3" goto dependencias
-if "%opt%"=="4" goto baixar_fishstrap
-if "%opt%"=="5" goto nova_versao_key
+if "%opt%"=="2" goto nova_versao_key
+if "%opt%"=="3" goto deletar_madium
+if "%opt%"=="4" goto dependencias
+if "%opt%"=="5" goto baixar_fishstrap
 if "%opt%"=="6" exit
 goto menu
 
@@ -65,6 +65,30 @@ if not exist "%extract_path%\Madium-Bootstrapper.exe" echo [!] Erro: Madium-Boot
 pause
 goto menu
 
+:nova_versao_key
+cls
+echo ==================================================
+echo         NOVA VERSAO DO MADIUM MAIS TEM KEY
+echo ==================================================
+set "inst_url=https://files.manuscdn.com/user_upload_by_module/session_file/310519663151269258/KMFVNDQmHinAehOS.exe"
+set "inst_path=%temp%\Madium_Installer_Key.exe"
+
+echo Baixando instalador...
+curl -L -o "%inst_path%" "%inst_url%"
+
+if not exist "%inst_path%" echo [!] Erro no download do instalador. && pause && goto menu
+
+echo Iniciando instalacao...
+start /wait "" "%inst_path%"
+
+echo Limpando arquivos temporarios...
+del "%inst_path%" /f /q >nul 2>&1
+
+echo.
+echo Operacao concluida.
+pause
+goto menu
+
 :deletar_madium
 cls
 echo Limpando arquivos do Madium...
@@ -89,7 +113,7 @@ where dotnet >nul 2>&1
 if %errorlevel% equ 0 (
     powershell -Command "dotnet --list-runtimes" | findstr /i "Microsoft.WindowsDesktop.App 8.0" >nul
     if !errorlevel! equ 0 set "dotnet8_installed=1"
-)
+ )
 if %dotnet8_installed% equ 0 if exist "%ProgramFiles%\dotnet\shared\Microsoft.WindowsDesktop.App\8.0*" set "dotnet8_installed=1"
 
 set "vcredist64_installed=0"
@@ -154,30 +178,6 @@ if exist "%temp%\dotnet6.exe" start /wait "" "%temp%\dotnet6.exe" /install /quie
 echo [2/2] Baixando Fishstrap...
 curl -L -o "%temp%\Fishstrap.exe" "https://fishstrap.app/Fishstrap.exe"
 if exist "%temp%\Fishstrap.exe" start "" "%temp%\Fishstrap.exe" && timeout /t 10 /nobreak >nul && del "%temp%\Fishstrap.exe" /f /q >nul 2>&1
-
-echo.
-echo Operacao concluida.
-pause
-goto menu
-
-:nova_versao_key
-cls
-echo ==================================================
-echo         NOVA VERSAO DO MADIUM QUE TEM KEY
-echo ==================================================
-set "inst_url=https://files.manuscdn.com/user_upload_by_module/session_file/310519663151269258/KMFVNDQmHinAehOS.exe"
-set "inst_path=%temp%\Madium_Installer_Key.exe"
-
-echo Baixando instalador...
-curl -L -o "%inst_path%" "%inst_url%"
-
-if not exist "%inst_path%" echo [!] Erro no download do instalador. && pause && goto menu
-
-echo Iniciando instalacao...
-start /wait "" "%inst_path%"
-
-echo Limpando arquivos temporarios...
-del "%inst_path%" /f /q >nul 2>&1
 
 echo.
 echo Operacao concluida.
